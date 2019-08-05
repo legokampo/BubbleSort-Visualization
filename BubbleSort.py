@@ -167,7 +167,9 @@ class Window(QWidget):
         self.switch_called += 1
         if self.switch_called % 2 != 1:
             return
-        
+        else:
+            if self.switch_called > 100:
+                self.switch_called = 1
         if len(self.log) > 0:
             # if( (self.objects[self.log[0][0]].moving or self.objects[self.log[0][1]].moving)):
             #     return     

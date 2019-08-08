@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QApplication, QDesktopWidget
+from PyQt5.QtWidgets import QWidget, QApplication, QDesktopWidget, QLineEdit, QLabel, QPushButton
 from PyQt5.QtGui import *
 from PyQt5.QtCore import Qt, QPoint, QTimer, QSize, QRectF, pyqtSignal, QObject
 import sys, random, math, time
@@ -67,14 +67,30 @@ class visualObj(QObject):
 
 class Window(QWidget):
     #static var
+    WIDGET_WIDTH = 0
+    WIDGET_HEIGHT = 0
     PER_ROW = 0
     PER_COLUMN = 0
-    FIRST_ROW = QPoint(10, 10)
+    FIRST_ROW = QPoint(10, 100)
     def __init__(self,width, height):
         super().__init__()
         self.timeInterval = 1000 # 1 second
         self.setGeometry(0, 0, width, height)
         self.setWindowTitle('BubbleSort')
+        Window.WIDGET_WIDTH = width
+        Window.WIDGET_HEIGHT = height
+        Window.PER_ROW = height / 5
+        Window.PER_COLUMN = Window.PER_ROW
+        
+        self.initSetting()
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.animate)
+        # self.timer.start(300)
+        # self.last_show_time = -1 #never shown
+        
+        self.initInputGui()
+        self.show()
+    def initSetting(self):
         self.objects = []
         self.current = 0 #current index of comparison(first)
         self.walk_through = []
@@ -82,19 +98,43 @@ class Window(QWidget):
         self.switching = False
         self.log = []
         self.switch_called = 0
-        self.show()
-        
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.animate)
-        self.timer.start(190)
-        self.last_show_time = -1 #never shown
-        rnd = [i for i in range(1,10)]
+    def initInputGui(self):
+        self.nameLabel = QLabel(self)
+        self.nameLabel.setText('請輸入亂數範圍：')
+        self.get_minnumber = QLineEdit(self)
+        self.get_maxnumber = QLineEdit(self)
+
+        self.get_maxnumber.move(Window.WIDGET_WIDTH / 3, Window.PER_ROW * 2)
+        self.get_maxnumber.resize(50, 32)
+        self.get_minnumber.move(Window.WIDGET_WIDTH / 3 - 100, Window.PER_ROW * 2)
+        self.get_minnumber.resize(50, 32)
+        self.nameLabel.move(Window.WIDGET_WIDTH / 3 - 350, Window.PER_ROW * 2)
+        self.nameLabel.resize(200,50)
+        self.start_sort = QPushButton(self)
+        self.start_sort.setText("Start!")
+        self.start_sort.move(Window.WIDGET_WIDTH / 3, Window.PER_ROW * 2 + 50)
+        self.start_sort.resize(100,50)
+        self.start_sort.clicked.connect(self.startSorting)
+    def startSorting(self):
+        self.compareTimeInterval = 190
+        self.restart()
+        try:
+            max_num = int(self.get_maxnumber.text())
+            min_num = int(self.get_minnumber.text())
+        except ValueError:
+            self.nameLabel.setText("請輸入合法的整數上下界！")
+            return
+        Window.PER_COLUMN = Window.WIDGET_WIDTH / (max_num - min_num + 1)
+        Window.PER_ROW = Window.PER_COLUMN
+        rnd = [i for i in range(min_num,max_num + 1)]
         random.shuffle(rnd)
         # self.init_data(5, 42, 85, 35, 20)
         self.init_data(*rnd)
         self.showBubbleSort()
-        
         self.stage = 0
+        self.timer.start(300)
+    def restart(self):
+        self.initSetting()
     def paintEvent(self, e):
         qp = QPainter()
         qp.begin(self)
@@ -170,9 +210,9 @@ class Window(QWidget):
         else:
             if self.switch_called > 100:
                 self.switch_called = 1
+        
         if len(self.log) > 0:
-            # if( (self.objects[self.log[0][0]].moving or self.objects[self.log[0][1]].moving)):
-            #     return     
+
             if self.stage == 0 :
                 if not self.switching:
                     self.switching = True #start
@@ -194,19 +234,23 @@ class Window(QWidget):
             self.stage += 1
             if self.stage > 2:
                 self.stage = 0
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event):            
         if event.key() == Qt.Key_Q:
             self.timer.stop()
         elif event.key() == Qt.Key_A:
-            self.timer.start(190)
+            self.compareTimeInterval -= 10
+            if self.compareTimeInterval <= 0 :
+                self.compareTimeInterval = 1
+            self.timer.start(self.compareTimeInterval)
         event.accept()
 
         
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    Window.PER_ROW = int(QDesktopWidget().screenGeometry().height() / 5)
-    Window.PER_COLUMN =  int(QDesktopWidget().screenGeometry().height() / 5)#int(QDesktopWidget().screenGeometry().width() / 40)
+    Window.PER_ROW = int(QDesktopWidget().screenGeometry().height())
+    Window.PER_COLUMN =  int(QDesktopWidget().screenGeometry().width())#int(QDesktopWidget().screenGeometry().width() / 40)
     mainWin = Window(int(QDesktopWidget().screenGeometry().width()), int(QDesktopWidget().screenGeometry().height()))
+    
     sys.exit(app.exec_())
         
 
